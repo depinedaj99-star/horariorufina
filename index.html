@@ -173,22 +173,56 @@ function offs(p,w){
   return[s,s2];
 }
 
+function getRespOffs(w){
+  var moOffs=offs({n:'Mohammed',h:48,o:6,rp:1},w);
+  var vaOffs=offs({n:'Vanessa', h:40,o:2,rp:1},w);
+  if(inc(moOffs,vaOffs[0])&&inc(moOffs,vaOffs[1])){vaOffs=[(vaOffs[0]+6)%7,(vaOffs[1]+6)%7];}
+  else if(inc(moOffs,vaOffs[0])){vaOffs=[(vaOffs[0]+6)%7,vaOffs[1]];}
+  else if(inc(moOffs,vaOffs[1])){vaOffs=[vaOffs[0],(vaOffs[1]+6)%7];}
+  return{mo:moOffs,va:vaOffs};
+}
+
 function gs(p,di,w){
   if(p.we){if(di===4)return T.TVF;if(di===5)return T.TVS;if(di===6)return T.TVD;return null;}
   var o=offs(p,w);if(inc(o,di))return null;
   if(p.h===30){if(inc(WE,di))return T.T3F;var i=idx(W30,p);return((w+i)%2===0)?T.T3M:T.T3T;}
   if(p.h===25)return p.n==='Anastasiia'?T.T2M:T.T2T;
-  if(p.rp){var vc=(w%2===0);if(p.n==='Vanessa')return vc?T.CIE:T.APT;if(p.n==='Mohammed')return vc?T.APT:T.CIE;}
+  if(p.rp){
+    var vc=(w%2===0);
+    var ro=getRespOffs(w);
+    var moOffs=ro.mo,vaOffs=ro.va;
+    if(p.n==='Mohammed'){
+      if(inc(moOffs,di))return null;
+      if(inc(vaOffs,di))return T.CIE;
+      return vc?T.APT:T.CIE;
+    }
+    if(p.n==='Vanessa'){
+      if(inc(vaOffs,di))return null;
+      if(inc(moOffs,di))return T.CIE;
+      return vc?T.CIE:T.APT;
+    }
+  }
   var a40=W40.filter(function(q){return!inc(offs(q,w),di);});
   var pos=idx(a40,p);if(pos<0)return null;
   var rot=(pos+w)%a40.length;
   var vc=(w%2===0),ra=0;
   for(var i=0;i<ST.length;i++){
-    var q=ST[i];if(!q.rp||inc(offs(q,w),di))continue;
-    if(q.n==='Vanessa'&&!vc)ra++;if(q.n==='Mohammed'&&vc)ra++;
+    var q=ST[i];if(!q.rp)continue;
+    var ro2=getRespOffs(w);
+    if(q.n==='Mohammed'){
+      if(inc(ro2.mo,di))continue; // descansa
+      if(inc(ro2.va,di)){continue;} // Vanessa descansa → Mohammed cierra, no abre
+      if(vc)ra++; // semana par → Mohammed abre
+    }
+    if(q.n==='Vanessa'){
+      if(inc(ro2.va,di))continue; // descansa
+      if(inc(ro2.mo,di)){continue;} // Mohammed descansa → Vanessa cierra, no abre
+      if(!vc)ra++; // semana impar → Vanessa abre
+    }
   }
   var an=Math.max(0,3-ra);
-  if(rot<an)return T.APT;if(rot<an+4)return T.CI2;return T.TAR;
+  // Garantizar siempre 3 en apertura: si los responsables no aportan APT, los workers cubren 3
+  if(rot<an)return T.APT;if(rot<an+3)return T.CI2;return T.TAR;
 }
 
 function go(d){W=W+d;if(W<0)W=0;render();}
